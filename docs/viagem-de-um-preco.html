@@ -1,0 +1,642 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>A viagem de um preço</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Source+Sans+3:wght@400;600&display=swap">
+<style>
+  /* Layout: cabeçalho com o "preço do posto"; depois um percurso de paragens (lista à esquerda, paragem ativa à direita). */
+  :root {
+    --bg: #eef2f3;
+    --surface: #ffffff;
+    --zone: #e1e8eb;
+    --ink: #15262d;
+    --muted: #566870;
+    --line: #b3c1c6;
+    --accent: #b05e08;
+    --accent-soft: #f6e4cd;
+    --ok: #2f7a4f;
+    --sign-bg: #15262d;
+    --sign-fg: #dfe8eb;
+    --sign-digit: #f2a640;
+    --f-display: "Barlow Semi Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+    --f-body: "Source Sans 3", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --f-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0e1619; --surface: #16242a; --zone: #121e23; --ink: #e1e9ec; --muted: #93a6ad;
+      --line: #364b54; --accent: #f0a443; --accent-soft: #3b2a13; --ok: #6cc592;
+      --sign-bg: #071013; --sign-fg: #d4dfe3; --sign-digit: #f5ae4c;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0e1619; --surface: #16242a; --zone: #121e23; --ink: #e1e9ec; --muted: #93a6ad;
+    --line: #364b54; --accent: #f0a443; --accent-soft: #3b2a13; --ok: #6cc592;
+    --sign-bg: #071013; --sign-fg: #d4dfe3; --sign-digit: #f5ae4c;
+    color-scheme: dark;
+  }
+
+  body {
+    background: var(--bg); color: var(--ink);
+    font-family: var(--f-body); font-size: 17px; line-height: 1.55;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 36px 64px;
+  }
+  main { max-width: 1080px; margin: 0 auto; display: flex; flex-direction: column; gap: 56px; }
+  h1, h2, h3 { font-family: var(--f-display); margin: 0; line-height: 1.1; text-wrap: balance; }
+  h1 { font-size: clamp(2.2rem, 5.4vw, 3.4rem); font-weight: 700; letter-spacing: -0.01em; }
+  h2 { font-size: 1.8rem; font-weight: 600; }
+  h3 { font-size: 1.6rem; font-weight: 600; }
+  p { margin: 0; max-width: 65ch; }
+  code { font-family: var(--f-mono); font-size: 0.85em; background: var(--zone); padding: 0.05em 0.35em; border-radius: 4px; }
+  .eyebrow { font-family: var(--f-mono); font-size: 13px; color: var(--muted); }
+  .muted { color: var(--muted); }
+
+  /* ---------- cabeçalho */
+  .hero { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 32px; align-items: end; }
+  .hero-text { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+  .lead { font-size: 1.15rem; }
+  .sign {
+    background: var(--sign-bg); color: var(--sign-fg); border-radius: 12px; padding: 16px 20px 14px;
+    display: flex; flex-direction: column; gap: 6px; min-width: 300px; border: 1px solid var(--line);
+  }
+  .sign-top { font-family: var(--f-display); font-weight: 600; font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.85; }
+  .sign-row { display: flex; align-items: baseline; gap: 14px; }
+  .sign-fuel { font-family: var(--f-display); font-weight: 600; font-size: 15px; line-height: 1.1; text-transform: uppercase; letter-spacing: 0.06em; }
+  .sign-price { font-family: var(--f-display); font-weight: 700; font-size: 4.2rem; line-height: 0.95; color: var(--sign-digit); font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
+  .sign-unit { font-family: var(--f-display); font-weight: 600; font-size: 1.1rem; color: var(--sign-digit); }
+  .sign-meta { font-family: var(--f-mono); font-size: 12px; opacity: 0.75; }
+
+  /* ---------- percurso */
+  .journey { display: flex; flex-direction: column; gap: 20px; }
+  .journey-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px 24px; }
+  .hint { font-size: 14px; color: var(--muted); }
+  .journey-body { display: grid; grid-template-columns: 290px minmax(0, 1fr); gap: 28px; align-items: start; }
+
+  .route { display: flex; flex-direction: column; gap: 14px; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); }
+  .route-group { display: flex; flex-direction: column; gap: 2px; }
+  .route-label {
+    font-family: var(--f-display); font-weight: 600; font-size: 12px; letter-spacing: 0.09em;
+    text-transform: uppercase; color: var(--muted); padding-left: 38px; margin-bottom: 2px;
+  }
+  .stop-btn {
+    display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 12px; align-items: center;
+    width: 100%; text-align: left; background: none; border: 0; border-radius: 8px;
+    padding: 6px 8px 6px 4px; cursor: pointer; color: var(--ink); font: inherit; font-size: 15px; line-height: 1.25;
+  }
+  .stop-btn:hover { background: var(--zone); }
+  .stop-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .dot {
+    width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center;
+    font-family: var(--f-display); font-weight: 600; font-size: 13px; font-variant-numeric: tabular-nums;
+    border: 1.5px solid var(--line); background: var(--surface); color: var(--muted);
+  }
+  .stop-btn .file { font-family: var(--f-mono); font-size: 12px; color: var(--muted); display: block; }
+  .stop-btn.done .dot { background: var(--zone); color: var(--ink); border-color: var(--line); }
+  .stop-btn.key .dot { border-color: var(--accent); color: var(--accent); }
+  .stop-btn[aria-current="step"] { background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); }
+  .stop-btn[aria-current="step"] .dot { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+  .stop-btn[aria-current="step"] .t { font-weight: 600; }
+
+  .panel {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+    padding: 24px 26px 22px; display: flex; flex-direction: column; gap: 16px; min-width: 0;
+  }
+  .panel-top { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 16px; align-items: center; }
+  .chip {
+    font-family: var(--f-display); font-weight: 600; font-size: 12.5px; letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 3px 10px; border-radius: 999px; background: var(--zone); color: var(--muted);
+  }
+  .chip.key { background: var(--accent-soft); color: var(--accent); }
+  .counter { font-family: var(--f-mono); font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .progress { height: 4px; background: var(--zone); border-radius: 2px; overflow: hidden; }
+  .progress > div { height: 100%; background: var(--accent); width: 0; transition: width 0.25s ease; }
+  .where { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 14px; color: var(--muted); }
+  .body { display: flex; flex-direction: column; gap: 10px; }
+  .data { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .data-label { font-family: var(--f-display); font-weight: 600; font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+  .data pre, .data .tablewrap {
+    margin: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
+    padding: 14px 16px; overflow-x: auto; font-family: var(--f-mono); font-size: 13px; line-height: 1.6; color: var(--ink);
+  }
+  .data .tablewrap { padding: 4px 4px; }
+  pre .hl, td.hl, tr.hl td { background: var(--accent-soft); }
+  pre .hl { color: var(--ink); padding: 1px 3px; border-radius: 3px; }
+  pre .c { color: var(--muted); }
+  pre .k { color: var(--accent); font-weight: 500; }
+  table.dt { border-collapse: collapse; font-family: var(--f-mono); font-size: 12.5px; width: 100%; font-variant-numeric: tabular-nums; }
+  table.dt th { text-align: left; font-weight: 500; color: var(--muted); padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  table.dt td { padding: 7px 10px; border-bottom: 1px solid var(--zone); white-space: nowrap; }
+  table.dt tr:last-child td { border-bottom: 0; }
+  table.dt .num { text-align: right; }
+  .check { color: var(--ok); font-weight: 500; }
+  .why { font-size: 15px; color: var(--muted); border-left: 2px solid var(--line); padding-left: 12px; }
+  .why b { color: var(--ink); font-weight: 600; }
+  .nav { display: flex; justify-content: space-between; gap: 12px; padding-top: 4px; }
+  .nav button {
+    font: inherit; font-family: var(--f-display); font-weight: 600; font-size: 16px; letter-spacing: 0.02em;
+    padding: 9px 18px; border-radius: 8px; cursor: pointer; border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  }
+  .nav button.primary { background: var(--ink); border-color: var(--ink); color: var(--surface); }
+  .nav button:disabled { opacity: 0.4; cursor: default; }
+  .nav button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .panel.enter { animation: enter 0.22s ease; }
+  @keyframes enter { from { opacity: 0.4; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .panel.enter { animation: none; } .progress > div { transition: none; } }
+
+  /* ---------- execuções seguintes */
+  .after { display: flex; flex-direction: column; gap: 20px; }
+  .cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; align-items: start; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 20px 22px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .card h3 { font-size: 1.3rem; }
+  .card .tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; }
+  .card.find { border-color: var(--accent); }
+  .card.find h3 { color: var(--accent); }
+  .wide { grid-column: 1 / -1; }
+  footer { font-size: 14px; color: var(--muted); max-width: 80ch; }
+
+  @media (max-width: 860px) {
+    .hero { grid-template-columns: 1fr; }
+    .sign { min-width: 0; }
+    .journey-body { grid-template-columns: 1fr; }
+    .route { position: static; flex-direction: row; overflow-x: auto; gap: 6px; padding-bottom: 6px; }
+    .route-group { flex-direction: row; gap: 4px; }
+    .route-label, .stop-btn .t, .stop-btn .file { display: none; }
+    .stop-btn { grid-template-columns: 26px; padding: 4px; width: auto; }
+    .stop-btn[aria-current="step"] { box-shadow: none; background: none; }
+    .cards { grid-template-columns: 1fr; }
+    .panel { padding: 18px 16px; }
+  }
+</style>
+
+<main>
+  <header class="hero">
+    <div class="hero-text">
+      <div class="eyebrow">fuel-prices-pipeline · cenário com os teus dados</div>
+      <h1>A viagem de um preço</h1>
+      <p class="lead">Seguimos um único preço desde a resposta da API da DGEG até à consulta que fizeste no Adminer. Passa por 4 ficheiros Python, um ficheiro Parquet, 4 tabelas de base e 6 modelos SQL. Todos os valores vêm das tuas execuções de 27 e 28 de outubro.</p>
+    </div>
+    <aside class="sign" aria-label="O preço que vamos seguir: gasóleo simples a 2,122 euros no PA Coop de Vila Boa, Barcelos">
+      <div class="sign-top">PA Coop de Vila Boa · Barcelos</div>
+      <div class="sign-row">
+        <span class="sign-fuel">Gasóleo<br>simples</span>
+        <span class="sign-price">2,122</span>
+        <span class="sign-unit">€/l</span>
+      </div>
+      <div class="sign-meta">posto 95301 · combustível 2101 · desde 26 out, 08:20</div>
+    </aside>
+  </header>
+
+  <section class="journey" aria-labelledby="j-title">
+    <div class="journey-head">
+      <h2 id="j-title">O percurso, paragem a paragem</h2>
+      <span class="hint">Usa os botões, clica numa paragem ou as setas ← → do teclado.</span>
+    </div>
+    <div class="journey-body">
+      <nav class="route" id="route" aria-label="Paragens"></nav>
+      <article class="panel" id="panel" aria-live="polite">
+        <div class="panel-top">
+          <span class="chip" id="p-layer"></span>
+          <span class="counter" id="p-counter"></span>
+        </div>
+        <div class="progress" aria-hidden="true"><div id="p-bar"></div></div>
+        <h3 id="p-title"></h3>
+        <div class="where" id="p-where"></div>
+        <div class="body" id="p-body"></div>
+        <div class="data">
+          <div class="data-label" id="p-dlabel"></div>
+          <div id="p-data"></div>
+        </div>
+        <p class="why" id="p-why"></p>
+        <div class="nav">
+          <button type="button" id="btn-prev">← Anterior</button>
+          <button type="button" id="btn-next" class="primary">Seguinte →</button>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="after" aria-labelledby="a-title">
+    <h2 id="a-title">E nas execuções seguintes?</h2>
+    <p>Correste o pipeline três vezes. O mesmo preço voltou a chegar nas três, mas só foi inserido uma vez.</p>
+    <div class="cards">
+      <div class="card wide">
+        <h3>O nosso preço nas três execuções</h3>
+        <div class="tablewrap">
+          <table class="dt">
+            <thead><tr><th>Execução</th><th>Quando</th><th>O que aconteceu à chave</th><th>last_seen_at</th><th class="num">Preços novos na tarefa</th></tr></thead>
+            <tbody>
+              <tr class="hl"><td>c876a2e2</td><td>27 out, 19:33</td><td>não existia → INSERT</td><td>27 out 19:33:51</td><td class="num">2969</td></tr>
+              <tr><td>bf70f268</td><td>27 out, 19:37</td><td>já existia → só atualiza a data</td><td>27 out 19:37:45</td><td class="num">0</td></tr>
+              <tr><td>168b2d91</td><td>28 out, 11:49</td><td>já existia → só atualiza a data</td><td>28 out 11:49:21</td><td class="num">444</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="muted">A segunda execução, 4 minutos depois da primeira, não inseriu nenhum preço. É a prova de que o pipeline é idempotente: correr duas vezes não duplica nada.</p>
+      </div>
+
+      <div class="card">
+        <h3>Quando o preço muda</h3>
+        <p>O PETROCARREIRA, também em Barcelos, baixou o gasóleo às 20:00 de 27 de outubro, 27 minutos depois da tua primeira execução.</p>
+        <div class="tablewrap">
+          <table class="dt">
+            <thead><tr><th>valid_from</th><th>valid_to</th><th class="num">preço</th><th class="num">variação</th><th>atual</th></tr></thead>
+            <tbody>
+              <tr><td>27 out 07:00</td><td>27 out 20:00</td><td class="num">2,294</td><td class="num">—</td><td>não</td></tr>
+              <tr class="hl"><td>27 out 20:00</td><td>—</td><td class="num">2,164</td><td class="num">−0,130 (−5,67 %)</td><td>sim</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="muted">A versão antiga não foi apagada: ganhou um <code>valid_to</code>. A nova só foi apanhada na execução de 28 de outubro às 11:49, por isso <code>capture_lag_hours</code> = 15,8. Correr o pipeline uma vez por dia limita a precisão a um dia.</p>
+      </div>
+
+      <div class="card find">
+        <h3>Uma descoberta nos teus dados</h3>
+        <p>A 28 de outubro entraram 444 versões novas de gasóleo simples. 8 são de postos novos. Das outras 436, só 122 mudaram mesmo de preço. As restantes 314 têm o mesmo preço da versão anterior: o posto voltou a comunicar o preço com uma hora nova.</p>
+        <p class="muted">Exemplo: GALP A.S. BARCELOS, 2,297 € a 27 e a 28 de outubro, com duas versões. Estas linhas aparecem em <code>fct_price_changes</code> com variação 0. O pipeline pode passar a ignorá-las ou a marcá-las.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>Dados: as execuções c876a2e2 e bf70f268 (27 out) e 168b2d91 (28 out), recarregadas a partir dos teus ficheiros Parquet com o código do projeto. O pipeline não guarda o JSON original da API, por isso o da paragem 1 foi reconstruído no formato da API. As horas são de Lisboa, que nestes dias coincide com UTC.</footer>
+</main>
+
+<script>
+(function () {
+  const STEPS = [
+    {
+      group: "API da DGEG", layer: "API da DGEG", file: "PesquisarPostos",
+      title: "A DGEG responde com o preço em vigor",
+      where: ["precoscombustiveis.dgeg.gov.pt", "GET /api/PrecoComb/PesquisarPostos"],
+      body: `<p>O pipeline pede todos os postos com gasóleo simples (combustível 2101), 500 de cada vez. A resposta vem num envelope JSON e cada posto é um objeto com campos em português.</p><p>O preço chega como texto, com vírgula e símbolo do euro. A hora é a de Lisboa, sem fuso.</p>`,
+      dlabel: "Resposta da API (um dos 2969 postos)",
+      data: `<pre><span class="c">GET …/PesquisarPostos?idsTiposComb=2101&amp;qtdPorPagina=500&amp;pagina=1…6</span>
+{
+  "status": true,
+  "mensagem": "sucesso",
+  "resultado": [
+    …,
+    {
+      "Id": 95301,
+      "Nome": "PA Coop de Vila Boa",
+      "TipoPosto": "Outro",
+      "Municipio": "Barcelos",
+      <span class="hl">"Preco": "2,122 €",</span>
+      "Marca": "Genérico",
+      "Combustivel": "Gasóleo simples",
+      <span class="hl">"DataAtualizacao": "2026-10-26 08:20",</span>
+      "Distrito": "Braga",
+      "Morada": "Rua da Boela",
+      "Localidade": "Barcelos",
+      "CodPostal": "4750-782",
+      "Latitude": 41.553123,
+      "Longitude": -8.617405,
+      "Quantidade": 2969
+    },
+    …
+  ],
+  "token": null
+}</pre>`,
+      why: `<b>Porquê começar aqui:</b> a API só mostra o preço de agora. Não tem histórico nem "o que mudou desde ontem". O histórico tem de ser construído pelo pipeline.`
+    },
+    {
+      group: "Contentor pipeline", layer: "Contentor pipeline", file: "client.py",
+      title: "O cliente pede página a página",
+      where: ["client.py", "DgegClient.paginate()", "DgegClient.get()"],
+      body: `<p>O <code>client.py</code> confirma que cada resposta tem <code>"status": true</code> e uma lista em <code>resultado</code>. Se não tiver, a tarefa falha com <code>DgegApiError</code>.</p><p>Depois pede páginas até ter tantas linhas como o campo <code>Quantidade</code>. Entre pedidos espera 0,5 s. Se a API responder 429 ou 5xx, volta a tentar com esperas cada vez maiores.</p>`,
+      dlabel: "Pedidos feitos para o gasóleo simples",
+      data: `<pre>página 1   500 linhas    500 / 2969
+página 2   500 linhas   1000 / 2969
+página 3   500 linhas   1500 / 2969
+página 4   500 linhas   2000 / 2969
+página 5   500 linhas   2500 / 2969
+<span class="hl">página 6   469 linhas   2969 / 2969   → pára: chegou à Quantidade</span>
+
+<span class="c"># total da execução: 29 pedidos
+# 1 (tipos de combustível) + 6 + 6 + 7 + 3 + 2 + 3 + 1 (os 7 combustíveis)</span></pre>`,
+      why: `<b>Porquê:</b> parar no total evita pedir uma página vazia a um serviço público. Este comportamento está coberto em <code>tests/test_client.py</code>.`
+    },
+    {
+      group: "Contentor pipeline", layer: "Contentor pipeline", file: "parsing.py",
+      title: "Os campos ganham nomes e tipos",
+      where: ["parsing.py", "normalize_price_row()"],
+      body: `<p>Cada objeto passa a um dicionário Python com nomes em inglês e tipos certos. O preço passa de texto para <code>Decimal</code>, para não haver erros de arredondamento.</p><p>A hora de Lisboa passa para UTC. A 26 de outubro já não há hora de verão, por isso fica igual. Em agosto, 08:20 em Lisboa seriam 07:20 UTC. O pipeline junta ainda o combustível, a hora da fotografia e o id da execução.</p>`,
+      dlabel: "Depois de normalize_price_row()",
+      data: `<pre>{
+  'station_id':       95301,
+  'station_name':     'PA Coop de Vila Boa',
+  'brand':            'Genérico',
+  'station_type':     'Outro',
+  'district':         'Braga',
+  'municipality':     'Barcelos',
+  'locality':         'Barcelos',
+  'address':          'Rua da Boela',
+  'postal_code':      '4750-782',
+  'latitude':         41.553123,
+  'longitude':        -8.617405,
+  <span class="hl">'fuel_type_id':     2101,</span>                         <span class="c"># novo</span>
+  'fuel_type':        'Gasóleo simples',
+  <span class="hl">'price_eur':        Decimal('2.122'),</span>             <span class="c"># era "2,122 €"</span>
+  <span class="hl">'price_updated_at': datetime(2026, 10, 26, 8, 20, tzinfo=UTC),</span>
+  <span class="hl">'_snapshot_at':     datetime(2026, 10, 27, 19, 33, 51, tzinfo=UTC),</span>  <span class="c"># novo</span>
+  <span class="hl">'_run_id':          'c876a2e2-66ca-4af6-9ecc-98d08cd7312a',</span>       <span class="c"># novo</span>
+}</pre>`,
+      why: `<b>Porquê UTC:</b> guardar tudo em UTC evita ambiguidades na mudança de hora. As datas para análise voltam a ser calculadas em hora de Lisboa mais à frente.`
+    },
+    {
+      group: "Contentor pipeline", layer: "Contentor pipeline", file: "parsing.py",
+      title: "Verificações antes de seguir",
+      where: ["parsing.py", "validate_price_row()", "clean_coordinates()"],
+      body: `<p>Uma linha que falhe uma regra vai para a quarentena com o motivo, em vez de ser apagada. Esta passou todas, e as coordenadas ficam porque estão dentro de Portugal continental.</p><p>Nesta execução nenhuma das 2969 linhas foi rejeitada, por isso não foi criado ficheiro de quarentena.</p>`,
+      dlabel: "Regras aplicadas a esta linha",
+      data: `<div class="tablewrap"><table class="dt">
+<thead><tr><th></th><th>Regra</th><th>Valor desta linha</th></tr></thead>
+<tbody>
+<tr><td class="check">✓</td><td>station_id é um número inteiro</td><td>95301</td></tr>
+<tr><td class="check">✓</td><td>o preço foi lido</td><td>2.122</td></tr>
+<tr><td class="check">✓</td><td>preço entre 0,30 € e 5,00 €</td><td>2.122</td></tr>
+<tr><td class="check">✓</td><td>a data de atualização foi lida</td><td>2026-10-26 08:20 UTC</td></tr>
+<tr><td class="check">✓</td><td>não está no futuro (fotografia + 2 h)</td><td>≤ 2026-10-27 21:33</td></tr>
+<tr><td class="check">✓</td><td>latitude no continente (36,8 a 42,2)</td><td>41.553123</td></tr>
+<tr><td class="check">✓</td><td>longitude no continente (−9,6 a −6,1)</td><td>-8.617405</td></tr>
+<tr class="hl"><td>→</td><td>resultado</td><td>linha válida</td></tr>
+</tbody></table></div>`,
+      why: `<b>Porquê quarentena:</b> nada é apagado em silêncio. As linhas rejeitadas ficam em <code>data/quarantine/</code> e o número aparece no registo da execução.`
+    },
+    {
+      group: "Pasta data/ no teu Mac", layer: "Pasta data/", file: "storage.py",
+      title: "A fotografia do dia fica guardada em Parquet",
+      where: ["storage.py", "write_parquet()", "read_parquet()"],
+      body: `<p>As 2969 linhas válidas são escritas num ficheiro Parquet com um schema fixo. Se algum tipo não bater certo, a escrita falha logo.</p><p>O ficheiro é escrito primeiro como <code>.tmp</code> e só depois renomeado, para nunca ficar meio escrito. A seguir o pipeline lê-o de volta, e é essa tabela que segue para o PostgreSQL.</p>`,
+      dlabel: "O ficheiro na tua pasta",
+      data: `<pre>data/raw/dgeg/prices/
+└── snapshot_date=2026-10-27/
+    └── <span class="hl">fuel=2101_district=all__c876a2e2-66ca-4af6-9ecc-98d08cd7312a.parquet</span>
+        <span class="c">197 KB · compressão zstd · 2969 linhas · 17 colunas</span>
+
+<span class="c">coluna             tipo Arrow              valor nesta linha</span>
+station_id         int64 (not null)        95301
+price_eur          decimal128(6, 3)        2.122
+price_updated_at   timestamp[us, UTC]      2026-10-26 08:20:00
+_snapshot_at       timestamp[us, UTC]      2026-10-27 19:33:51
+_run_id            string                  c876a2e2-…</pre>`,
+      why: `<b>Porquê guardar antes de carregar:</b> com o Parquet podes reconstruir a base de dados sem chamar a API: <code>python -m fuel_prices replay data/raw/dgeg/prices</code>. Foi assim que este cenário foi montado.`
+    },
+    {
+      group: "PostgreSQL · raw e meta", layer: "PostgreSQL", file: "warehouse.py",
+      title: "Entra no PostgreSQL de uma só vez",
+      where: ["warehouse.py", "stage()"],
+      body: `<p>O <code>warehouse.py</code> abre uma transação e cria uma tabela temporária com os tipos traduzidos do Parquet: decimal para <code>NUMERIC(6,3)</code>, timestamp UTC para <code>TIMESTAMPTZ</code>.</p><p>As 2969 linhas entram com <code>COPY</code>, muito mais rápido do que 2969 <code>INSERT</code>. A tabela temporária desaparece no fim da transação.</p>`,
+      dlabel: "SQL executado",
+      data: `<pre><span class="k">BEGIN;</span>
+CREATE TEMP TABLE _stage_prices (
+  station_id BIGINT, station_name TEXT, brand TEXT, …,
+  price_eur NUMERIC(6,3),
+  price_updated_at TIMESTAMPTZ,
+  _snapshot_at TIMESTAMPTZ, _run_id TEXT
+) ON COMMIT DROP;
+
+COPY _stage_prices (station_id, station_name, …, _run_id) FROM STDIN;
+<span class="c">-- 2969 linhas, entre elas:</span>
+<span class="hl">95301 | PA Coop de Vila Boa | Genérico | … | 2.122 | 2026-10-26 08:20:00+00 | …</span></pre>`,
+      why: `<b>Porquê uma tabela temporária:</b> primeiro carrega-se tudo depressa e depois compara-se com o que já existe, numa só operação SQL.`
+    },
+    {
+      group: "PostgreSQL · raw e meta", layer: "PostgreSQL · raw", file: "raw.stations",
+      title: "O posto fica registado",
+      where: ["warehouse.py", "UPSERT_STATIONS", "→ raw.stations"],
+      body: `<p>Há uma linha por posto. Se o posto já existir, os dados são substituídos pelos mais recentes (SCD tipo 1). As datas só se alargam: <code>first_seen_at</code> guarda a mais antiga e <code>last_seen_at</code> a mais recente.</p>`,
+      dlabel: "raw.stations, depois da primeira execução",
+      data: `<pre>INSERT INTO raw.stations … SELECT DISTINCT ON (station_id) … FROM _stage_prices
+ON CONFLICT (station_id) DO UPDATE SET …;
+
+station_id     95301
+station_name   PA Coop de Vila Boa
+brand          Genérico
+station_type   Outro
+district       Braga
+municipality   Barcelos
+address        Rua da Boela
+latitude       41.553123
+longitude      -8.617405
+<span class="hl">first_seen_at  2026-10-27 19:33:51</span>
+<span class="hl">last_seen_at   2026-10-27 19:33:51</span>   <span class="c"># depois da 3.ª execução: 2026-10-28 11:49:21</span></pre>`,
+      why: `<b>Porquê:</b> os nomes e moradas mudam pouco e só interessa o valor atual. O histórico que importa é o dos preços, na paragem seguinte.`
+    },
+    {
+      group: "PostgreSQL · raw e meta", layer: "PostgreSQL · raw", file: "raw.price_history", key: true,
+      title: "É um preço novo? Deteção de alterações",
+      where: ["warehouse.py", "UPSERT_PRICE_VERSIONS", "→ raw.price_history"],
+      body: `<p>Cada versão de preço é identificada por posto + combustível + hora da atualização. A chave (95301, 2101, 26 out 08:20) ainda não existia, por isso o PostgreSQL inseriu uma linha nova.</p><p>O <code>RETURNING (xmax = 0)</code> devolve <code>true</code> para inserções e <code>false</code> para atualizações. É assim que o pipeline conta os preços novos: 2969 nesta execução.</p>`,
+      dlabel: "raw.price_history",
+      data: `<pre><span class="c">chave</span> (95301, 2101, 2026-10-26 08:20 UTC)  →  <span class="k">não existe → INSERT</span>
+
+station_id        95301
+fuel_type_id      2101
+price_updated_at  2026-10-26 08:20:00
+<span class="hl">price_eur         2.122</span>
+first_seen_at     2026-10-27 19:33:51
+last_seen_at      2026-10-27 19:33:51
+_run_id           c876a2e2-66ca-4af6-9ecc-98d08cd7312a
+
+RETURNING (xmax = 0) AS inserted   →   <span class="hl">true</span></pre>`,
+      why: `<b>O coração do projeto:</b> se a mesma chave voltar a aparecer, só <code>last_seen_at</code> muda. Vê mais abaixo o que aconteceu nas tuas execuções seguintes.`
+    },
+    {
+      group: "PostgreSQL · raw e meta", layer: "PostgreSQL · meta", file: "meta.*",
+      title: "A execução fica registada",
+      where: ["warehouse.py", "set_high_water_mark()", "pipeline.py", "_record()"],
+      body: `<p>Na mesma transação do carregamento, o pipeline guarda o <em>high-water mark</em>: a hora de atualização mais recente vista neste combustível. Se passar mais de 72 h sem avançar, a execução avisa que a fonte parou.</p><p>Depois do <code>COMMIT</code>, grava uma linha de auditoria para esta tarefa em <code>meta.pipeline_runs</code>.</p>`,
+      dlabel: "meta.pipeline_state e meta.pipeline_runs",
+      data: `<pre>meta.pipeline_state
+  dataset           prices
+  scope             fuel=2101_district=all
+  high_water_mark   2026-10-27 19:05:00   <span class="c"># o preço mais recente de todos os postos</span>
+  <span class="hl">idade             0,5 h  &lt; 72 h  → sem aviso</span>
+<span class="k">COMMIT;</span>
+
+meta.pipeline_runs
+  run_id             c876a2e2-66ca-4af6-9ecc-98d08cd7312a
+  dataset / scope    prices / fuel=2101_district=all
+  status             success
+  rows_extracted     2969
+  rows_rejected      0
+  <span class="hl">new_versions       2969</span>
+  stations_upserted  2969
+  api_requests       6
+  parquet_path       data/raw/dgeg/prices/snapshot_date=2026-10-27/fuel=2101_…parquet</pre>`,
+      why: `<b>Porquê na mesma transação:</b> ou ficam gravados os preços e o estado, ou nenhum dos dois. Uma falha a meio nunca deixa a base de dados num estado intermédio.`
+    },
+    {
+      group: "PostgreSQL · analytics", layer: "PostgreSQL · analytics", file: "01 e 02 · dimensões",
+      title: "As dimensões ganham contexto",
+      where: ["sql/transform/01_dim_fuel_type.sql", "02_dim_station.sql"],
+      body: `<p>Depois de carregar os 7 combustíveis, o <code>warehouse.py</code> reconstrói as tabelas de <code>analytics</code> numa só transação, com o fuso de Lisboa.</p><p>As dimensões juntam regras de negócio. O gasóleo simples entra na família Diesel. O posto, com a marca "Genérico", não está na lista de hipermercados nem de petrolíferas, por isso fica no segmento independente.</p>`,
+      dlabel: "analytics.dim_fuel_type e analytics.dim_station",
+      data: `<div class="tablewrap"><table class="dt">
+<thead><tr><th>fuel_type_id</th><th>fuel_type</th><th>fuel_family</th><th>is_premium_grade</th></tr></thead>
+<tbody><tr><td>2101</td><td>Gasóleo simples</td><td class="hl">Diesel</td><td>false</td></tr></tbody></table></div>
+<div class="tablewrap" style="margin-top:8px"><table class="dt">
+<thead><tr><th>station_id</th><th>brand</th><th>brand_segment</th><th>is_motorway</th><th>is_active</th></tr></thead>
+<tbody><tr><td>95301</td><td>Genérico</td><td class="hl">Independent / low-cost</td><td>false</td><td>true</td></tr></tbody></table></div>`,
+      why: `<b>Porquê reconstruir tudo:</b> a esta escala é rápido, e quem está a consultar nunca vê tabelas a meio. Com muito mais dados, isto passaria a modelos incrementais (por exemplo, com dbt).`
+    },
+    {
+      group: "PostgreSQL · analytics", layer: "PostgreSQL · analytics", file: "03 · fct_price_changes",
+      title: "Cada versão ganha um intervalo de validade",
+      where: ["sql/transform/03_fct_price_changes.sql"],
+      body: `<p>Com as funções de janela <code>LEAD</code> e <code>LAG</code>, cada versão fica a saber quando começou, quando acabou e quanto mudou face à anterior (SCD tipo 2).</p><p>Como este é o único preço conhecido do posto, ainda não tem fim nem preço anterior.</p>`,
+      dlabel: "analytics.fct_price_changes",
+      data: `<pre>station_id / fuel     95301 / 2101
+valid_from            2026-10-26 08:20
+<span class="hl">valid_to              NULL</span>          <span class="c"># ainda em vigor</span>
+<span class="hl">is_current            true</span>
+is_first_observation  true
+price_eur             2.122
+previous_price_eur    NULL
+price_change_eur      NULL
+change_weekday        1             <span class="c"># segunda-feira</span>
+capture_lag_hours     NULL          <span class="c"># só a partir da 2.ª versão</span></pre>`,
+      why: `<b>Para comparar:</b> no fundo da página está um posto de Barcelos que mudou de preço e ficou com duas linhas nesta tabela.`
+    },
+    {
+      group: "PostgreSQL · analytics", layer: "PostgreSQL · analytics", file: "04 · fct_daily_station_price",
+      title: "Uma linha por dia",
+      where: ["sql/transform/04_fct_daily_station_price.sql"],
+      body: `<p>Os preços mudam em dias irregulares, mas um gráfico precisa de um valor por dia. O <code>generate_series</code> repete cada versão desde o dia em que começou até ao último dia em que foi vista.</p><p>Depois das tuas três execuções, este preço cobre três dias.</p>`,
+      dlabel: "analytics.fct_daily_station_price",
+      data: `<div class="tablewrap"><table class="dt">
+<thead><tr><th>price_date</th><th class="num">price_eur</th><th></th></tr></thead>
+<tbody>
+<tr><td>2026-10-26</td><td class="num">2.122</td><td class="muted">dia em que o preço começou</td></tr>
+<tr><td>2026-10-27</td><td class="num">2.122</td><td class="muted"></td></tr>
+<tr class="hl"><td>2026-10-28</td><td class="num">2.122</td><td class="muted">último dia em que foi visto (11:49)</td></tr>
+</tbody></table></div>`,
+      why: `<b>Porquê:</b> é esta tabela que permite perguntar "quanto custava o gasóleo em cada posto, em cada dia" sem lógica complicada no Power BI.`
+    },
+    {
+      group: "PostgreSQL · analytics", layer: "PostgreSQL · analytics", file: "05 · agg_daily_prices",
+      title: "Entra nas médias de Barcelos, Braga e Portugal",
+      where: ["sql/transform/05_agg_daily_prices.sql"],
+      body: `<p>Com <code>GROUPING SETS</code>, uma só query calcula as estatísticas do país, do distrito e do concelho.</p><p>A 27 de outubro, este é o preço mais baixo dos 41 postos de Barcelos.</p>`,
+      dlabel: "analytics.agg_daily_prices · gasóleo simples · 27 out 2026",
+      data: `<div class="tablewrap"><table class="dt">
+<thead><tr><th>geo_level</th><th>área</th><th class="num">postos</th><th class="num">média</th><th class="num">mediana</th><th class="num">mín</th><th class="num">máx</th></tr></thead>
+<tbody>
+<tr><td>municipality</td><td>Barcelos</td><td class="num">41</td><td class="num">2.243</td><td class="num">2.267</td><td class="num hl">2.122</td><td class="num">2.329</td></tr>
+<tr><td>district</td><td>Braga</td><td class="num">254</td><td class="num">2.244</td><td class="num">2.262</td><td class="num">2.079</td><td class="num">2.344</td></tr>
+<tr><td>national</td><td>Portugal</td><td class="num">2970</td><td class="num">2.256</td><td class="num">2.274</td><td class="num">1.949</td><td class="num">2.449</td></tr>
+</tbody></table></div>`,
+      why: `<b>Porquê:</b> é a tabela que um dashboard usaria para o mapa e as tendências por distrito.`
+    },
+    {
+      group: "PostgreSQL · analytics", layer: "PostgreSQL · analytics", file: "06 · rpt_cheapest_stations",
+      title: "Primeiro lugar em Barcelos",
+      where: ["sql/transform/06_rpt_cheapest_stations.sql"],
+      body: `<p>O relatório ordena os preços em vigor de cada concelho com <code>DENSE_RANK</code> e compara cada posto com as médias.</p><p>O PA Coop de Vila Boa fica em primeiro, 12 cêntimos abaixo da média de Barcelos e 13 abaixo da média nacional.</p>`,
+      dlabel: "analytics.rpt_cheapest_stations · Barcelos · gasóleo simples",
+      data: `<div class="tablewrap"><table class="dt">
+<thead><tr><th>#</th><th>posto</th><th>brand_segment</th><th class="num">preço</th><th class="num">vs concelho</th><th class="num">vs país</th></tr></thead>
+<tbody>
+<tr class="hl"><td>1</td><td>PA Coop de Vila Boa</td><td>Independent / low-cost</td><td class="num">2.122</td><td class="num">−0.121</td><td class="num">−0.134</td></tr>
+<tr><td>2</td><td>INTERMARCHÉ Interviatodos</td><td>Hypermarket</td><td class="num">2.129</td><td class="num">−0.114</td><td class="num">−0.127</td></tr>
+<tr><td>3</td><td>E. LECLERC BARCELOS</td><td>Hypermarket</td><td class="num">2.133</td><td class="num">−0.110</td><td class="num">−0.123</td></tr>
+</tbody></table></div>`,
+      why: `<b>Porquê "em vigor":</b> só entram preços ainda listados pela API na última fotografia. Um posto que deixou de aparecer não fica no top por engano.`
+    },
+    {
+      group: "Tu", layer: "Adminer ou DBeaver", file: "localhost:8080 · :5433",
+      title: "E aparece na tua consulta",
+      where: ["Adminer (localhost:8080)", "DBeaver (localhost:5433)"],
+      body: `<p>É esta a linha que viste no Adminer. O texto <code>"2,122 €"</code> da API passou pelo <code>client.py</code>, pelo <code>parsing.py</code>, por um ficheiro Parquet, por <code>raw.stations</code> e <code>raw.price_history</code>, deixou registo em <code>meta</code> e atravessou os 6 modelos SQL até chegar aqui.</p>`,
+      dlabel: "A tua consulta",
+      data: `<pre>SELECT price_rank, station_name, brand, price_eur, diff_vs_national_avg_eur
+FROM analytics.rpt_cheapest_stations
+WHERE municipality = 'Barcelos' AND fuel_type_id = 2101
+ORDER BY price_rank;
+
+ price_rank | station_name              | brand       | price_eur | diff_vs_national_avg_eur
+------------+---------------------------+-------------+-----------+-------------------------
+<span class="hl">          1 | PA Coop de Vila Boa       | Genérico    |     2.122 |                   -0.134</span>
+          2 | INTERMARCHÉ Interviatodos | INTERMARCHÉ |     2.129 |                   -0.127
+          3 | E. LECLERC BARCELOS       | LECLERC     |     2.133 |                   -0.123</pre>`,
+      why: `<b>A seguir:</b> desce até "E nas execuções seguintes?" para ver o que acontece a este preço quando o pipeline volta a correr.`
+    }
+  ];
+
+  const $ = (id) => document.getElementById(id);
+  const route = $("route");
+  let current = 0;
+
+  // lista de paragens, agrupada por camada
+  let group = null, groupEl = null;
+  STEPS.forEach((s, i) => {
+    if (s.group !== group) {
+      group = s.group;
+      groupEl = document.createElement("div");
+      groupEl.className = "route-group";
+      const lab = document.createElement("div");
+      lab.className = "route-label";
+      lab.textContent = s.group;
+      groupEl.appendChild(lab);
+      route.appendChild(groupEl);
+    }
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "stop-btn" + (s.key ? " key" : "");
+    b.id = "stop-" + (i + 1);
+    b.setAttribute("aria-label", `Paragem ${i + 1}: ${s.title}`);
+    b.innerHTML = `<span class="dot">${i + 1}</span><span><span class="t">${s.title}</span><span class="file">${s.file}</span></span>`;
+    b.addEventListener("click", () => go(i, true));
+    groupEl.appendChild(b);
+  });
+
+  function go(i, fromUser) {
+    current = Math.max(0, Math.min(STEPS.length - 1, i));
+    const s = STEPS[current];
+    $("p-layer").textContent = s.layer;
+    $("p-layer").className = "chip" + (s.key ? " key" : "");
+    $("p-counter").textContent = `Paragem ${current + 1} de ${STEPS.length}`;
+    $("p-bar").style.width = ((current + 1) / STEPS.length * 100) + "%";
+    $("p-title").textContent = s.title;
+    $("p-where").innerHTML = s.where.map((w) => `<code>${w}</code>`).join(" ");
+    $("p-body").innerHTML = s.body;
+    $("p-dlabel").textContent = s.dlabel;
+    $("p-data").innerHTML = s.data;
+    $("p-why").innerHTML = s.why;
+    $("btn-prev").disabled = current === 0;
+    $("btn-next").disabled = current === STEPS.length - 1;
+    route.querySelectorAll(".stop-btn").forEach((b, j) => {
+      b.classList.toggle("done", j < current);
+      if (j === current) b.setAttribute("aria-current", "step"); else b.removeAttribute("aria-current");
+    });
+    const panel = $("panel");
+    panel.classList.remove("enter"); void panel.offsetWidth; panel.classList.add("enter");
+    const active = $("stop-" + (current + 1));
+    if (route.scrollWidth > route.clientWidth) {
+      route.scrollTo({ left: active.offsetLeft - route.clientWidth / 2 + active.offsetWidth / 2, behavior: "smooth" });
+    }
+    if (fromUser) {
+      const top = panel.getBoundingClientRect().top;
+      if (top < 0 || top > window.innerHeight * 0.6) panel.scrollIntoView({ block: "start", behavior: "smooth" });
+    }
+  }
+
+  $("btn-prev").addEventListener("click", () => go(current - 1, true));
+  $("btn-next").addEventListener("click", () => go(current + 1, true));
+  document.addEventListener("keydown", (e) => {
+    if (e.target.closest && e.target.closest("input, textarea, select")) return;
+    if (e.key === "ArrowRight") { go(current + 1, false); e.preventDefault(); }
+    if (e.key === "ArrowLeft") { go(current - 1, false); e.preventDefault(); }
+  });
+
+  function start(data) { go(typeof data.step === "number" ? data.step : 0, false); }
+  window.claude?.hot?.snapshot?.(() => ({ step: current }));
+  window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+})();
+</script>
+
+</body></html>

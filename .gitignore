@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+build/
+dist/
+
+# Tooling
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Secrets
+.env
+
+# Logs of the scheduled runs
+logs/
+
+# Landed data (reproducible from the API)
+data/*
+!data/.gitkeep
+
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/

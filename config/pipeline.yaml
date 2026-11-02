@@ -1,0 +1,23 @@
+# Pipeline behaviour. Connection strings come from environment variables (see .env.example).
+# Run `python -m fuel_prices lookups` to list every fuel type and district id.
+
+source:
+  api_base_url: https://precoscombustiveis.dgeg.gov.pt/api/PrecoComb
+  page_size: 500               # rows per request
+  request_delay_seconds: 0.5   # pause between requests - it is a public service
+  fuel_type_ids:               # road fuels
+    - 2101   # Gasóleo simples
+    - 2105   # Gasóleo especial
+    - 3201   # Gasolina simples 95
+    - 3205   # Gasolina especial 95
+    - 3400   # Gasolina 98
+    - 3405   # Gasolina especial 98
+    - 1120   # GPL Auto
+  district_ids: []             # empty = whole country; e.g. [3] = Braga only
+
+quality:
+  stale_source_hours: 72       # warn when no station reported a price change for this long
+
+storage:
+  parquet_dir: data/raw
+  quarantine_dir: data/quarantine
