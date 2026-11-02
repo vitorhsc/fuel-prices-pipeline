@@ -16,8 +16,8 @@ fuel stations from the public **DGEG API** every day, lands them as **Parquet**,
 | **Concepts** | API ingestion · ETL/ELT · incremental loads (change detection) · SCD type 2 history · data quality & quarantine · idempotent loads · dimensional modelling |
 | **Source** | [DGEG – Preços dos Combustíveis Online](https://precoscombustiveis.dgeg.gov.pt/) (Portuguese Directorate-General for Energy and Geology) |
 
-**Visual guide** (in Portuguese): [project map](https://vitorhsc.github.io/fuel-prices-pipeline/mapa-do-projeto.html) ·
-[the journey of one real price through every layer](https://vitorhsc.github.io/fuel-prices-pipeline/viagem-de-um-preco.html)
+**Visual guide** (English / Português): [project map](https://vitorhsc.github.io/fuel-prices-pipeline/mapa-do-projeto.html#en) ·
+[the journey of one real price through every layer](https://vitorhsc.github.io/fuel-prices-pipeline/viagem-de-um-preco.html#en)
 
 ---
 
@@ -337,7 +337,7 @@ meant to run once a day. Data © DGEG.
 ├── scheduling/            # automatic runs on macOS (launchd job + wrapper script)
 ├── tests/                 # unit + integration tests, fake DGEG API
 ├── analysis/              # example analytical queries
-├── docs/                  # visual guide (HTML, in Portuguese)
+├── docs/                  # visual guide (HTML, English / Portuguese), served by GitHub Pages
 ├── config/pipeline.yaml
 ├── docker-compose.yml     # PostgreSQL + Adminer + pipeline
 ├── Dockerfile

@@ -1,11 +1,10 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]{display:none!important}</style></head><body>
 <title>Mapa do fuel-prices-pipeline</title>
-<meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Source+Sans+3:wght@400;600&display=swap">
 <style>
-  /* Layout: uma coluna de leitura; cada figura ocupa a largura e faz scroll horizontal no telemóvel. */
+  /* Layout: uma coluna de leitura; cada figura ocupa a largura e faz scroll horizontal no telemóvel. Texto em PT e EN, alternado pelo seletor. */
   :root {
     --bg: #eef2f3;
     --surface: #ffffff;
@@ -33,6 +32,11 @@
     color-scheme: dark;
   }
 
+  /* language: show only the active one (English when no script runs) */
+  :root[data-lang="pt"] [data-l="en"],
+  :root[data-lang="en"] [data-l="pt"],
+  :root:not([data-lang]) [data-l="pt"] { display: none !important; }
+
   body {
     background: var(--bg);
     color: var(--ink);
@@ -41,14 +45,21 @@
     line-height: 1.55;
     padding-left: max(16px, env(safe-area-inset-left, 0px));
     padding-right: max(16px, env(safe-area-inset-right, 0px));
-    padding-block: 40px 64px;
+    padding-block: 32px 64px;
   }
   main { max-width: 860px; margin: 0 auto; display: flex; flex-direction: column; gap: 56px; }
   section, header { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 
-  .eyebrow {
-    font-family: var(--f-mono); font-size: 13px; color: var(--muted); letter-spacing: 0.02em;
+  .topbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .eyebrow { font-family: var(--f-mono); font-size: 13px; color: var(--muted); letter-spacing: 0.02em; }
+  .lang { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 2px; background: var(--surface); }
+  .lang button {
+    font: inherit; font-family: var(--f-display); font-weight: 600; font-size: 13px; letter-spacing: 0.08em;
+    border: 0; background: none; color: var(--muted); padding: 4px 12px; border-radius: 999px; cursor: pointer;
   }
+  .lang button[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
+  .lang button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
   h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; line-height: 1.1; }
   h1 { font-size: clamp(2.1rem, 5vw, 3rem); font-weight: 700; letter-spacing: -0.01em; }
   h2 { font-size: 1.75rem; font-weight: 600; }
@@ -58,7 +69,7 @@
   .lead { font-size: 1.15rem; color: var(--ink); }
   code { font-family: var(--f-mono); font-size: 0.86em; background: var(--zone); padding: 0.05em 0.35em; border-radius: 4px; }
 
-  /* Painel de preços: os números reais da primeira execução */
+  /* Painel com os números reais da primeira execução */
   .board {
     display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
     border: 1px solid var(--line); border-radius: 10px; background: var(--surface); overflow: hidden;
@@ -74,7 +85,7 @@
     font-family: var(--f-display); font-weight: 700; font-size: 1.9rem; line-height: 1;
     font-variant-numeric: tabular-nums; color: var(--ink);
   }
-  .cell span { font-size: 14px; color: var(--muted); }
+  .cell > span { font-size: 14px; color: var(--muted); }
   .cell.hl b { color: var(--accent); }
 
   figure { margin: 0; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
@@ -114,65 +125,105 @@
   svg .t-accent { fill: var(--accent); font-weight: 600; }
   svg .t-mono-s.t-accent { font-weight: 500; }
 </style>
+<script>
+  (function () {
+    var l = null;
+    var h = (location.hash || "").replace("#", "").toLowerCase();
+    if (h === "pt" || h === "en") l = h;
+    if (!l) { try { l = localStorage.getItem("lang"); } catch (e) {} }
+    if (l !== "pt" && l !== "en") l = /^pt/i.test(navigator.language || "") ? "pt" : "en";
+    document.documentElement.dataset.lang = l;
+    document.documentElement.lang = l === "pt" ? "pt-PT" : "en";
+  })();
+</script>
 
 <main>
   <header>
-    <div class="eyebrow">fuel-prices-pipeline · v1.0.0</div>
-    <h1>Como o projeto está montado</h1>
-    <p class="lead">Dois esquemas para explicar o projeto a quem nunca o viu: o caminho que os dados fazem, da API da DGEG até ao Power BI, e a forma como os ficheiros se chamam uns aos outros.</p>
-    <div class="board" aria-label="Números da primeira execução real">
-      <div class="board-title">Primeira execução real · 27 out 2026</div>
-      <div class="cell hl"><b>12 695</b><span>preços carregados</span></div>
-      <div class="cell"><b>7</b><span>combustíveis</span></div>
-      <div class="cell"><b>0</b><span>linhas rejeitadas</span></div>
-      <div class="cell"><b>29</b><span>pedidos à API</span></div>
-      <div class="cell"><b>~30 s</b><span>do início ao fim</span></div>
+    <div class="topbar">
+      <div class="eyebrow">fuel-prices-pipeline · v1.0.0</div>
+      <div class="lang" role="group" aria-label="Língua / Language">
+        <button type="button" id="lang-pt" data-set="pt">PT</button>
+        <button type="button" id="lang-en" data-set="en">EN</button>
+      </div>
+    </div>
+    <h1><span data-l="pt">Como o projeto está montado</span><span data-l="en">How the project fits together</span></h1>
+    <p class="lead" data-l="pt">Dois esquemas para perceber o projeto sem ler o código: o caminho que os dados fazem, da API da DGEG até ao Power BI, e a forma como os ficheiros se chamam uns aos outros.</p>
+    <p class="lead" data-l="en">Two diagrams to understand the project without reading the code: the path the data takes, from the DGEG fuel price API to Power BI, and how the files call each other.</p>
+    <div class="board">
+      <div class="board-title"><span data-l="pt">Primeira execução real · 27 out 2026</span><span data-l="en">First real run · 27 Oct 2026</span></div>
+      <div class="cell hl"><b><span data-l="pt">12 695</span><span data-l="en">12,695</span></b><span data-l="pt">preços carregados</span><span data-l="en">prices loaded</span></div>
+      <div class="cell"><b>7</b><span data-l="pt">combustíveis</span><span data-l="en">fuel types</span></div>
+      <div class="cell"><b>0</b><span data-l="pt">linhas rejeitadas</span><span data-l="en">rejected rows</span></div>
+      <div class="cell"><b>29</b><span data-l="pt">pedidos à API</span><span data-l="en">API requests</span></div>
+      <div class="cell"><b>~30 s</b><span data-l="pt">do início ao fim</span><span data-l="en">start to finish</span></div>
     </div>
   </header>
 
   <section>
-    <h2><span class="num">1</span>O caminho dos dados</h2>
-    <p>As caixas tracejadas são contentores Docker ou pastas tuas. As setas mostram para onde vão os dados e o que acontece em cada passagem.</p>
+    <h2><span class="num">1</span><span data-l="pt">O caminho dos dados</span><span data-l="en">The path of the data</span></h2>
+    <p data-l="pt">As caixas tracejadas são contentores Docker ou pastas locais. As setas mostram para onde vão os dados e o que acontece em cada passagem.</p>
+    <p data-l="en">Dashed boxes are Docker containers or local folders. Arrows show where the data goes and what happens at each hand-off.</p>
     <figure>
-      <div class="fig-scroll"><svg viewBox="0 0 800 780" role="img" aria-label="Fluxo de dados: API da DGEG, contentor pipeline com quatro passos, pasta data no Mac, contentor PostgreSQL com raw, analytics e meta, e as ferramentas que consultam." xmlns="http://www.w3.org/2000/svg"><defs><marker id="f1-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0 0L10 5L0 10z"/></marker><marker id="f1-acc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path class="ah-accent" d="M0 0L10 5L0 10z"/></marker></defs>
+      <div class="fig-scroll"><svg viewBox="0 0 800 780" role="img" aria-labelledby="f1-t" xmlns="http://www.w3.org/2000/svg"><title id="f1-t">Data flow: DGEG API, pipeline container with four steps, local data folder, PostgreSQL container with raw, analytics and meta, and the tools that query it. / Fluxo de dados: API da DGEG, contentor pipeline com quatro passos, pasta data local, contentor PostgreSQL com raw, analytics e meta, e as ferramentas que consultam.</title><defs><marker id="f1-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0 0L10 5L0 10z"/></marker><marker id="f1-acc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path class="ah-accent" d="M0 0L10 5L0 10z"/></marker></defs>
 <rect class="zone" x="8" y="104" width="772" height="164" rx="10"/>
-<text class="t-zone" x="124" y="126" text-anchor="start">Contentor pipeline</text>
-<text class="t-sub" x="764" y="126" text-anchor="end">pipeline.py coordena os 4 passos</text>
-<rect class="zone" x="200" y="300" width="390" height="118" rx="10"/>
-<text class="t-zone" x="216" y="322" text-anchor="start">O teu Mac</text>
+<text class="t-zone" data-l="pt" x="124" y="126" text-anchor="start">Contentor pipeline</text>
+<text class="t-zone" data-l="en" x="124" y="126" text-anchor="start">Pipeline container</text>
+<text class="t-sub" data-l="pt" x="764" y="126" text-anchor="end">pipeline.py coordena os 4 passos</text>
+<text class="t-sub" data-l="en" x="764" y="126" text-anchor="end">pipeline.py coordinates the 4 steps</text>
+<rect class="zone" x="150" y="300" width="440" height="118" rx="10"/>
+<text class="t-zone" data-l="pt" x="166" y="322" text-anchor="start">Máquina local</text>
+<text class="t-zone" data-l="en" x="166" y="322" text-anchor="start">Local machine</text>
 <rect class="zone" x="8" y="470" width="772" height="198" rx="10"/>
-<text class="t-zone" x="24" y="492" text-anchor="start">Contentor postgres · porta 5433</text>
+<text class="t-zone" data-l="pt" x="24" y="492" text-anchor="start">Contentor postgres · porta 5432</text>
+<text class="t-zone" data-l="en" x="24" y="492" text-anchor="start">Postgres container · port 5432</text>
 <rect class="node ext" x="22" y="16" width="170" height="60" rx="6"/>
-<text class="t-title" x="34" y="42" text-anchor="start">API da DGEG</text>
-<text class="t-sub" x="34" y="62" text-anchor="start">só dá o preço atual</text>
+<text class="t-title" data-l="pt" x="34" y="42" text-anchor="start">API da DGEG</text>
+<text class="t-title" data-l="en" x="34" y="42" text-anchor="start">DGEG API</text>
+<text class="t-sub" data-l="pt" x="34" y="62" text-anchor="start">só dá o preço atual</text>
+<text class="t-sub" data-l="en" x="34" y="62" text-anchor="start">current price only</text>
 <rect class="node" x="24" y="140" width="166" height="96" rx="6"/>
 <text class="t-mono" x="36" y="164" text-anchor="start">client.py</text>
-<text class="t-title" x="36" y="186" text-anchor="start">Extrair</text>
-<text class="t-sub" x="36" y="206" text-anchor="start">paginação e retries</text>
-<text class="t-sub" x="36" y="222" text-anchor="start">0,5 s entre pedidos</text>
+<text class="t-title" data-l="pt" x="36" y="186" text-anchor="start">Extrair</text>
+<text class="t-title" data-l="en" x="36" y="186" text-anchor="start">Extract</text>
+<text class="t-sub" data-l="pt" x="36" y="206" text-anchor="start">paginação e retries</text>
+<text class="t-sub" data-l="en" x="36" y="206" text-anchor="start">pagination and retries</text>
+<text class="t-sub" data-l="pt" x="36" y="222" text-anchor="start">0,5 s entre pedidos</text>
+<text class="t-sub" data-l="en" x="36" y="222" text-anchor="start">0.5 s between requests</text>
 <rect class="node" x="216" y="140" width="166" height="96" rx="6"/>
 <text class="t-mono" x="228" y="164" text-anchor="start">parsing.py</text>
-<text class="t-title" x="228" y="186" text-anchor="start">Validar</text>
+<text class="t-title" data-l="pt" x="228" y="186" text-anchor="start">Validar</text>
+<text class="t-title" data-l="en" x="228" y="186" text-anchor="start">Validate</text>
 <text class="t-sub" x="228" y="206" text-anchor="start">“1,973 €” → 1.973</text>
-<text class="t-sub" x="228" y="222" text-anchor="start">hora de Lisboa → UTC</text>
+<text class="t-sub" data-l="pt" x="228" y="222" text-anchor="start">hora de Lisboa → UTC</text>
+<text class="t-sub" data-l="en" x="228" y="222" text-anchor="start">Lisbon time → UTC</text>
 <rect class="node" x="408" y="140" width="166" height="96" rx="6"/>
 <text class="t-mono" x="420" y="164" text-anchor="start">storage.py</text>
-<text class="t-title" x="420" y="186" text-anchor="start">Guardar</text>
-<text class="t-sub" x="420" y="206" text-anchor="start">Parquet por dia</text>
-<text class="t-sub" x="420" y="222" text-anchor="start">escrita atómica</text>
+<text class="t-title" data-l="pt" x="420" y="186" text-anchor="start">Guardar</text>
+<text class="t-title" data-l="en" x="420" y="186" text-anchor="start">Land</text>
+<text class="t-sub" data-l="pt" x="420" y="206" text-anchor="start">Parquet por dia</text>
+<text class="t-sub" data-l="en" x="420" y="206" text-anchor="start">Parquet per day</text>
+<text class="t-sub" data-l="pt" x="420" y="222" text-anchor="start">escrita atómica</text>
+<text class="t-sub" data-l="en" x="420" y="222" text-anchor="start">atomic writes</text>
 <rect class="node" x="600" y="140" width="166" height="96" rx="6"/>
 <text class="t-mono" x="612" y="164" text-anchor="start">warehouse.py</text>
-<text class="t-title" x="612" y="186" text-anchor="start">Carregar</text>
-<text class="t-sub" x="612" y="206" text-anchor="start">insere só o que mudou</text>
-<text class="t-sub" x="612" y="222" text-anchor="start">corre os modelos SQL</text>
+<text class="t-title" data-l="pt" x="612" y="186" text-anchor="start">Carregar</text>
+<text class="t-title" data-l="en" x="612" y="186" text-anchor="start">Load</text>
+<text class="t-sub" data-l="pt" x="612" y="206" text-anchor="start">insere só o que mudou</text>
+<text class="t-sub" data-l="en" x="612" y="206" text-anchor="start">inserts only changes</text>
+<text class="t-sub" data-l="pt" x="612" y="222" text-anchor="start">corre os modelos SQL</text>
+<text class="t-sub" data-l="en" x="612" y="222" text-anchor="start">runs the SQL models</text>
 <rect class="node" x="216" y="336" width="166" height="66" rx="6"/>
 <text class="t-mono" x="228" y="360" text-anchor="start">data/quarantine/</text>
-<text class="t-sub" x="228" y="380" text-anchor="start">linhas rejeitadas</text>
-<text class="t-sub" x="228" y="395" text-anchor="start">com o motivo</text>
+<text class="t-sub" data-l="pt" x="228" y="380" text-anchor="start">linhas rejeitadas</text>
+<text class="t-sub" data-l="en" x="228" y="380" text-anchor="start">rejected rows</text>
+<text class="t-sub" data-l="pt" x="228" y="395" text-anchor="start">com o motivo</text>
+<text class="t-sub" data-l="en" x="228" y="395" text-anchor="start">with the reason</text>
 <rect class="node" x="408" y="336" width="166" height="66" rx="6"/>
 <text class="t-mono" x="420" y="360" text-anchor="start">data/raw/dgeg/</text>
-<text class="t-sub" x="420" y="380" text-anchor="start">Parquet, 1 ficheiro</text>
-<text class="t-sub" x="420" y="395" text-anchor="start">por combustível e dia</text>
+<text class="t-sub" data-l="pt" x="420" y="380" text-anchor="start">Parquet, 1 ficheiro</text>
+<text class="t-sub" data-l="en" x="420" y="380" text-anchor="start">Parquet, one file</text>
+<text class="t-sub" data-l="pt" x="420" y="395" text-anchor="start">por combustível e dia</text>
+<text class="t-sub" data-l="en" x="420" y="395" text-anchor="start">per fuel and day</text>
 <rect class="node" x="24" y="508" width="262" height="148" rx="6"/>
 <text class="t-title" x="36" y="532" text-anchor="start">analytics</text>
 <text class="t-mono-s" x="36" y="554" text-anchor="start">dim_station</text>
@@ -186,85 +237,106 @@
 <text class="t-mono-s" x="420" y="554" text-anchor="start">stations</text>
 <text class="t-mono-s t-accent" x="420" y="570" text-anchor="start">price_history</text>
 <text class="t-mono-s" x="420" y="586" text-anchor="start">fuel_types</text>
-<text class="t-sub" x="420" y="612" text-anchor="start">cada versão de preço</text>
-<text class="t-sub" x="420" y="628" text-anchor="start">fica guardada aqui</text>
+<text class="t-sub" data-l="pt" x="420" y="612" text-anchor="start">cada versão de preço</text>
+<text class="t-sub" data-l="en" x="420" y="612" text-anchor="start">every price version</text>
+<text class="t-sub" data-l="pt" x="420" y="628" text-anchor="start">fica guardada aqui</text>
+<text class="t-sub" data-l="en" x="420" y="628" text-anchor="start">is kept here</text>
 <rect class="node" x="600" y="508" width="166" height="148" rx="6"/>
 <text class="t-title" x="612" y="532" text-anchor="start">meta</text>
 <text class="t-mono-s" x="612" y="554" text-anchor="start">pipeline_runs</text>
 <text class="t-mono-s" x="612" y="570" text-anchor="start">pipeline_state</text>
-<text class="t-sub" x="612" y="596" text-anchor="start">uma linha por tarefa</text>
-<text class="t-sub" x="612" y="612" text-anchor="start">e até onde já leu</text>
+<text class="t-sub" data-l="pt" x="612" y="596" text-anchor="start">uma linha por tarefa</text>
+<text class="t-sub" data-l="en" x="612" y="596" text-anchor="start">one row per task</text>
+<text class="t-sub" data-l="pt" x="612" y="612" text-anchor="start">e até onde já leu</text>
+<text class="t-sub" data-l="en" x="612" y="612" text-anchor="start">and how far it has read</text>
 <rect class="node" x="24" y="708" width="262" height="56" rx="6"/>
 <text class="t-title" x="36" y="731" text-anchor="start">Adminer · DBeaver · Power BI</text>
-<text class="t-sub" x="36" y="750" text-anchor="start">consultam as tabelas analytics</text>
+<text class="t-sub" data-l="pt" x="36" y="750" text-anchor="start">consultam as tabelas analytics</text>
+<text class="t-sub" data-l="en" x="36" y="750" text-anchor="start">query the analytics tables</text>
 <path class="edge" d="M107 76V140" marker-end="url(#f1-arr)"/>
-<text class="t-lbl halo-bg" x="117" y="96" text-anchor="start">JSON · 29 pedidos</text>
+<text class="t-lbl halo-bg" data-l="pt" x="117" y="96" text-anchor="start">JSON · 29 pedidos</text>
+<text class="t-lbl halo-bg" data-l="en" x="117" y="96" text-anchor="start">JSON · 29 requests</text>
 <path class="edge" d="M190 188H216" marker-end="url(#f1-arr)"/>
 <path class="edge" d="M382 188H408" marker-end="url(#f1-arr)"/>
 <path class="edge" d="M574 188H600" marker-end="url(#f1-arr)"/>
 <path class="edge" d="M299 236V336" marker-end="url(#f1-arr)"/>
-<text class="t-lbl halo-bg" x="309" y="290" text-anchor="start">inválidas</text>
+<text class="t-lbl halo-bg" data-l="pt" x="309" y="290" text-anchor="start">inválidas</text>
+<text class="t-lbl halo-bg" data-l="en" x="309" y="290" text-anchor="start">invalid</text>
 <path class="edge" d="M491 236V336" marker-end="url(#f1-arr)" marker-start="url(#f1-arr)"/>
-<text class="t-lbl halo-bg" x="501" y="290" text-anchor="start">escreve · relê</text>
+<text class="t-lbl halo-bg" data-l="pt" x="501" y="290" text-anchor="start">escreve · relê</text>
+<text class="t-lbl halo-bg" data-l="en" x="501" y="290" text-anchor="start">write · read back</text>
 <path class="edge" d="M720 236V508" marker-end="url(#f1-arr)"/>
-<text class="t-lbl halo-bg" x="728" y="290" text-anchor="start">regista</text>
+<text class="t-lbl halo-bg" data-l="pt" x="728" y="290" text-anchor="start">regista</text>
+<text class="t-lbl halo-bg" data-l="en" x="728" y="290" text-anchor="start">logs</text>
 <path class="edge accent" d="M640 236V446H491V508" marker-end="url(#f1-acc)"/>
 <text class="t-lbl halo-bg t-accent" x="565" y="438" text-anchor="middle">COPY + upsert</text>
 <path class="edge" d="M408 582H286" marker-end="url(#f1-arr)"/>
-<text class="t-lbl halo-zone" x="347" y="574" text-anchor="middle">6 modelos SQL</text>
+<text class="t-lbl halo-zone" data-l="pt" x="347" y="574" text-anchor="middle">6 modelos SQL</text>
+<text class="t-lbl halo-zone" data-l="en" x="347" y="574" text-anchor="middle">6 SQL models</text>
 <path class="edge" d="M155 656V708" marker-end="url(#f1-arr)"/>
 <text class="t-lbl halo-bg" x="165" y="690" text-anchor="start">SQL</text>
 </svg></div>
-      <div class="scroll-hint">Arrasta para o lado para ver o esquema todo.</div>
-      <figcaption>A API só devolve o preço em vigor. O pipeline tira uma fotografia por dia, guarda-a em Parquet na tua pasta <code>data/</code> e, no PostgreSQL, insere só os preços que mudaram (seta a laranja). É assim que o histórico em <code>raw.price_history</code> vai crescendo. Os 6 modelos SQL transformam depois o <code>raw</code> nas tabelas de <code>analytics</code>, que são as que o Power BI deve usar.</figcaption>
+      <div class="scroll-hint"><span data-l="pt">Arrasta para o lado para ver o esquema todo.</span><span data-l="en">Swipe sideways to see the whole diagram.</span></div>
+      <figcaption data-l="pt">A API só devolve o preço em vigor. O pipeline tira uma fotografia em cada execução, guarda-a em Parquet na pasta <code>data/</code> e, no PostgreSQL, insere só os preços que mudaram (seta a laranja). É assim que o histórico em <code>raw.price_history</code> vai crescendo. Os 6 modelos SQL transformam depois o <code>raw</code> nas tabelas de <code>analytics</code>, que são as que ferramentas como o Power BI devem usar.</figcaption>
+      <figcaption data-l="en">The API only returns the price in force right now. The pipeline takes a snapshot on every run, stores it as Parquet in the <code>data/</code> folder and, in PostgreSQL, inserts only the prices that changed (orange arrow). That is how the history in <code>raw.price_history</code> grows. The 6 SQL models then turn <code>raw</code> into the <code>analytics</code> tables, which are the ones BI tools such as Power BI should use.</figcaption>
     </figure>
   </section>
 
   <section>
-    <h2><span class="num">2</span>Como os ficheiros se ligam</h2>
-    <p>Cada seta quer dizer “este ficheiro chama, lê ou constrói aquele”. Lê-se de cima para baixo.</p>
+    <h2><span class="num">2</span><span data-l="pt">Como os ficheiros se ligam</span><span data-l="en">How the files connect</span></h2>
+    <p data-l="pt">Cada seta quer dizer “este ficheiro chama, lê ou constrói aquele”. Lê-se de cima para baixo.</p>
+    <p data-l="en">Each arrow means “this file calls, reads or builds that one”. Read from top to bottom.</p>
 
-    <h3>Quando corres <code>make run</code></h3>
+    <h3><span data-l="pt">Ao correr</span><span data-l="en">Running</span> <code>make run</code></h3>
     <figure>
-      <div class="fig-scroll"><svg viewBox="0 0 800 1076" role="img" aria-label="Ligações entre ficheiros ao correr make run: Makefile, docker-compose.yml, Dockerfile, __main__.py, cli.py, pipeline.py e os quatro módulos, até à API, à pasta data e ao PostgreSQL." xmlns="http://www.w3.org/2000/svg"><defs><marker id="f2-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0 0L10 5L0 10z"/></marker><marker id="f2-acc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path class="ah-accent" d="M0 0L10 5L0 10z"/></marker></defs>
+      <div class="fig-scroll"><svg viewBox="0 0 800 1076" role="img" aria-labelledby="f2-t" xmlns="http://www.w3.org/2000/svg"><title id="f2-t">How files connect when running make run: Makefile, docker-compose.yml, Dockerfile, __main__.py, cli.py, pipeline.py and the four modules, down to the API, the data folder and PostgreSQL. / Ligações entre ficheiros ao correr make run: Makefile, docker-compose.yml, Dockerfile, __main__.py, cli.py, pipeline.py e os quatro módulos, até à API, à pasta data e ao PostgreSQL.</title><defs><marker id="f2-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0 0L10 5L0 10z"/></marker><marker id="f2-acc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path class="ah-accent" d="M0 0L10 5L0 10z"/></marker></defs>
 <rect class="zone" x="8" y="8" width="784" height="364" rx="10"/>
 <text class="t-zone" x="240" y="30" text-anchor="start">Docker</text>
 <rect class="zone" x="8" y="400" width="784" height="420" rx="10"/>
 <text class="t-zone" x="240" y="422" text-anchor="start">Python · src/fuel_prices/</text>
 <rect class="zone" x="8" y="848" width="784" height="212" rx="10"/>
-<text class="t-zone" x="240" y="870" text-anchor="start">Fora do Python</text>
+<text class="t-zone" data-l="pt" x="240" y="870" text-anchor="start">Fora do Python</text>
+<text class="t-zone" data-l="en" x="240" y="870" text-anchor="start">Outside Python</text>
 <rect class="pill" x="24" y="24" width="200" height="40" rx="20.0"/>
 <text class="t-pill" x="124.0" y="48.5" text-anchor="middle">$ make run</text>
 <path class="edge" d="M124 64V104" marker-end="url(#f2-arr)"/>
-<text class="t-lbl halo-zone" x="134" y="89" text-anchor="start">lê</text>
+<text class="t-lbl halo-zone" data-l="pt" x="134" y="89" text-anchor="start">lê</text>
+<text class="t-lbl halo-zone" data-l="en" x="134" y="89" text-anchor="start">reads</text>
 <rect class="node" x="24" y="104" width="200" height="56" rx="6"/>
 <text class="t-mono" x="36" y="127" text-anchor="start">Makefile</text>
-<text class="t-sub" x="36" y="146" text-anchor="start">atalhos: run, test, lint</text>
+<text class="t-sub" data-l="pt" x="36" y="146" text-anchor="start">atalhos: run, test, lint</text>
+<text class="t-sub" data-l="en" x="36" y="146" text-anchor="start">shortcuts: run, test, lint</text>
 <path class="edge" d="M124 160V200" marker-end="url(#f2-arr)"/>
 <text class="t-lbl halo-zone" x="134" y="185" text-anchor="start">docker compose …</text>
 <rect class="node" x="24" y="200" width="200" height="56" rx="6"/>
 <text class="t-mono" x="36" y="223" text-anchor="start">docker-compose.yml</text>
-<text class="t-sub" x="36" y="242" text-anchor="start">define os 3 contentores</text>
+<text class="t-sub" data-l="pt" x="36" y="242" text-anchor="start">define os 3 contentores</text>
+<text class="t-sub" data-l="en" x="36" y="242" text-anchor="start">defines the 3 containers</text>
 <rect class="node" x="300" y="200" width="200" height="56" rx="6"/>
 <text class="t-mono" x="312" y="223" text-anchor="start">.env</text>
-<text class="t-sub" x="312" y="242" text-anchor="start">POSTGRES_PORT=5433</text>
+<text class="t-sub" data-l="pt" x="312" y="242" text-anchor="start">definições locais</text>
+<text class="t-sub" data-l="en" x="312" y="242" text-anchor="start">local settings</text>
 <path class="edge" d="M300 228H224" marker-end="url(#f2-arr)"/>
-<text class="t-lbl halo-zone" x="262" y="220" text-anchor="middle">porta</text>
+<text class="t-lbl halo-zone" data-l="pt" x="262" y="220" text-anchor="middle">opções</text>
+<text class="t-lbl halo-zone" data-l="en" x="262" y="220" text-anchor="middle">options</text>
 <path class="edge" d="M124 256V296" marker-end="url(#f2-arr)"/>
 <text class="t-lbl halo-zone" x="134" y="281" text-anchor="start">build</text>
 <rect class="node" x="24" y="296" width="200" height="56" rx="6"/>
 <text class="t-mono" x="36" y="319" text-anchor="start">Dockerfile</text>
-<text class="t-sub" x="36" y="338" text-anchor="start">receita da imagem</text>
+<text class="t-sub" data-l="pt" x="36" y="338" text-anchor="start">receita da imagem</text>
+<text class="t-sub" data-l="en" x="36" y="338" text-anchor="start">image recipe</text>
 <rect class="node" x="300" y="296" width="200" height="56" rx="6"/>
 <text class="t-mono" x="312" y="319" text-anchor="start">pyproject.toml</text>
-<text class="t-sub" x="312" y="338" text-anchor="start">dependências do projeto</text>
+<text class="t-sub" data-l="pt" x="312" y="338" text-anchor="start">dependências do projeto</text>
+<text class="t-sub" data-l="en" x="312" y="338" text-anchor="start">project dependencies</text>
 <path class="edge" d="M224 324H300" marker-end="url(#f2-arr)"/>
 <text class="t-lbl halo-zone" x="262" y="316" text-anchor="middle">pip install</text>
 <path class="edge" d="M124 352V432" marker-end="url(#f2-arr)"/>
 <text class="t-lbl halo-bg" x="134" y="392" text-anchor="start">python -m fuel_prices run</text>
 <rect class="node" x="24" y="432" width="200" height="56" rx="6"/>
 <text class="t-mono" x="36" y="455" text-anchor="start">__main__.py</text>
-<text class="t-sub" x="36" y="474" text-anchor="start">ponto de entrada</text>
+<text class="t-sub" data-l="pt" x="36" y="474" text-anchor="start">ponto de entrada</text>
+<text class="t-sub" data-l="en" x="36" y="474" text-anchor="start">entry point</text>
 <path class="edge" d="M124 488V528" marker-end="url(#f2-arr)"/>
 <text class="t-lbl halo-zone" x="134" y="513" text-anchor="start">main()</text>
 <rect class="node" x="24" y="528" width="200" height="56" rx="6"/>
@@ -272,57 +344,74 @@
 <text class="t-sub" x="36" y="570" text-anchor="start">run · transform · replay</text>
 <rect class="node" x="300" y="528" width="200" height="56" rx="6"/>
 <text class="t-mono" x="312" y="551" text-anchor="start">config.py</text>
-<text class="t-sub" x="312" y="570" text-anchor="start">junta YAML e variáveis</text>
+<text class="t-sub" data-l="pt" x="312" y="570" text-anchor="start">junta YAML e variáveis</text>
+<text class="t-sub" data-l="en" x="312" y="570" text-anchor="start">merges YAML and env vars</text>
 <rect class="node" x="576" y="528" width="200" height="56" rx="6"/>
 <text class="t-mono" x="588" y="551" text-anchor="start">config/pipeline.yaml</text>
-<text class="t-sub" x="588" y="570" text-anchor="start">combustíveis, distritos…</text>
+<text class="t-sub" data-l="pt" x="588" y="570" text-anchor="start">combustíveis, distritos…</text>
+<text class="t-sub" data-l="en" x="588" y="570" text-anchor="start">fuels, districts…</text>
 <path class="edge" d="M224 556H300" marker-end="url(#f2-arr)"/>
-<text class="t-lbl halo-zone" x="262" y="548" text-anchor="middle">definições</text>
+<text class="t-lbl halo-zone" data-l="pt" x="262" y="548" text-anchor="middle">definições</text>
+<text class="t-lbl halo-zone" data-l="en" x="262" y="548" text-anchor="middle">settings</text>
 <path class="edge" d="M500 556H576" marker-end="url(#f2-arr)"/>
-<text class="t-lbl halo-zone" x="538" y="548" text-anchor="middle">lê</text>
+<text class="t-lbl halo-zone" data-l="pt" x="538" y="548" text-anchor="middle">lê</text>
+<text class="t-lbl halo-zone" data-l="en" x="538" y="548" text-anchor="middle">reads</text>
 <path class="edge" d="M124 584V624" marker-end="url(#f2-arr)"/>
 <text class="t-lbl halo-zone" x="134" y="609" text-anchor="start">run_pipeline()</text>
 <rect class="node" x="24" y="624" width="200" height="56" rx="6"/>
 <text class="t-mono" x="36" y="647" text-anchor="start">pipeline.py</text>
-<text class="t-sub" x="36" y="666" text-anchor="start">orquestra as tarefas</text>
+<text class="t-sub" data-l="pt" x="36" y="666" text-anchor="start">orquestra as tarefas</text>
+<text class="t-sub" data-l="en" x="36" y="666" text-anchor="start">orchestrates the tasks</text>
 <path class="edge" d="M124 680V712H685"/>
 <path class="edge" d="M109 712H124"/>
 <path class="edge" d="M109 712V744" marker-end="url(#f2-arr)"/>
 <path class="edge" d="M301 712V744" marker-end="url(#f2-arr)"/>
 <path class="edge" d="M493 712V744" marker-end="url(#f2-arr)"/>
 <path class="edge" d="M685 712V744" marker-end="url(#f2-arr)"/>
-<text class="t-lbl halo-zone" x="134" y="700">chama</text>
+<text class="t-lbl halo-zone" data-l="pt" x="134" y="700" text-anchor="start">chama</text>
+<text class="t-lbl halo-zone" data-l="en" x="134" y="700" text-anchor="start">calls</text>
 <rect class="node" x="24" y="744" width="170" height="56" rx="6"/>
 <text class="t-mono" x="36" y="767" text-anchor="start">client.py</text>
-<text class="t-sub" x="36" y="786" text-anchor="start">fala com a API</text>
+<text class="t-sub" data-l="pt" x="36" y="786" text-anchor="start">fala com a API</text>
+<text class="t-sub" data-l="en" x="36" y="786" text-anchor="start">talks to the API</text>
 <rect class="node" x="216" y="744" width="170" height="56" rx="6"/>
 <text class="t-mono" x="228" y="767" text-anchor="start">parsing.py</text>
-<text class="t-sub" x="228" y="786" text-anchor="start">limpa e valida</text>
+<text class="t-sub" data-l="pt" x="228" y="786" text-anchor="start">limpa e valida</text>
+<text class="t-sub" data-l="en" x="228" y="786" text-anchor="start">cleans and validates</text>
 <rect class="node" x="408" y="744" width="170" height="56" rx="6"/>
 <text class="t-mono" x="420" y="767" text-anchor="start">storage.py</text>
-<text class="t-sub" x="420" y="786" text-anchor="start">Parquet e quarentena</text>
+<text class="t-sub" data-l="pt" x="420" y="786" text-anchor="start">Parquet e quarentena</text>
+<text class="t-sub" data-l="en" x="420" y="786" text-anchor="start">Parquet and quarantine</text>
 <rect class="node" x="600" y="744" width="170" height="56" rx="6"/>
 <text class="t-mono" x="612" y="767" text-anchor="start">warehouse.py</text>
-<text class="t-sub" x="612" y="786" text-anchor="start">fala com o PostgreSQL</text>
+<text class="t-sub" data-l="pt" x="612" y="786" text-anchor="start">fala com o PostgreSQL</text>
+<text class="t-sub" data-l="en" x="612" y="786" text-anchor="start">talks to PostgreSQL</text>
 <path class="edge" d="M109 800V888" marker-end="url(#f2-arr)"/>
 <text class="t-lbl halo-bg" x="119" y="838" text-anchor="start">HTTPS</text>
 <path class="edge" d="M493 800V888" marker-end="url(#f2-arr)"/>
-<text class="t-lbl halo-bg" x="503" y="838" text-anchor="start">escreve</text>
+<text class="t-lbl halo-bg" data-l="pt" x="503" y="838" text-anchor="start">escreve</text>
+<text class="t-lbl halo-bg" data-l="en" x="503" y="838" text-anchor="start">writes</text>
 <path class="edge" d="M685 800V888" marker-end="url(#f2-arr)"/>
-<text class="t-lbl halo-bg" x="695" y="838" text-anchor="start">lê e corre</text>
-<text class="t-note" x="301" y="912" text-anchor="middle">parsing.py não lê nem escreve:</text>
-<text class="t-note" x="301" y="928" text-anchor="middle">só funções, fáceis de testar</text>
+<text class="t-lbl halo-bg" data-l="pt" x="695" y="838" text-anchor="start">lê e corre</text>
+<text class="t-lbl halo-bg" data-l="en" x="695" y="838" text-anchor="start">reads, runs</text>
+<text class="t-note" data-l="pt" x="301" y="912" text-anchor="middle">parsing.py não lê nem escreve:</text>
+<text class="t-note" data-l="en" x="301" y="912" text-anchor="middle">parsing.py does no I/O:</text>
+<text class="t-note" data-l="pt" x="301" y="928" text-anchor="middle">só funções, fáceis de testar</text>
+<text class="t-note" data-l="en" x="301" y="928" text-anchor="middle">pure functions, easy to test</text>
 <rect class="node ext" x="24" y="888" width="170" height="56" rx="6"/>
-<text class="t-title" x="36" y="911" text-anchor="start">API da DGEG</text>
+<text class="t-title" data-l="pt" x="36" y="911" text-anchor="start">API da DGEG</text>
+<text class="t-title" data-l="en" x="36" y="911" text-anchor="start">DGEG API</text>
 <text class="t-sub" x="36" y="930" text-anchor="start">PesquisarPostos</text>
 <rect class="node" x="408" y="888" width="170" height="56" rx="6"/>
 <text class="t-mono" x="420" y="911" text-anchor="start">data/</text>
 <text class="t-sub" x="420" y="930" text-anchor="start">raw/ · quarantine/</text>
 <rect class="node" x="600" y="888" width="170" height="56" rx="6"/>
 <text class="t-mono" x="612" y="911" text-anchor="start">sql/</text>
-<text class="t-sub" x="612" y="930" text-anchor="start">tabelas + 6 modelos</text>
+<text class="t-sub" data-l="pt" x="612" y="930" text-anchor="start">tabelas + 6 modelos</text>
+<text class="t-sub" data-l="en" x="612" y="930" text-anchor="start">tables + 6 models</text>
 <path class="edge" d="M685 944V984" marker-end="url(#f2-arr)"/>
-<text class="t-lbl halo-zone" x="695" y="969" text-anchor="start">executa em</text>
+<text class="t-lbl halo-zone" data-l="pt" x="695" y="969" text-anchor="start">executa em</text>
+<text class="t-lbl halo-zone" data-l="en" x="695" y="969" text-anchor="start">runs on</text>
 <rect class="node ext" x="600" y="984" width="170" height="56" rx="6"/>
 <text class="t-title" x="612" y="1007" text-anchor="start">PostgreSQL</text>
 <text class="t-sub" x="612" y="1026" text-anchor="start">raw · analytics · meta</text>
@@ -330,20 +419,23 @@
 <text class="t-mono-s" x="228" y="1007" text-anchor="start">analysis/</text>
 <text class="t-mono-s" x="228" y="1024" text-anchor="start">example_queries.sql</text>
 <path class="edge" d="M386 1012H600" marker-end="url(#f2-arr)"/>
-<text class="t-lbl halo-zone" x="493" y="1004" text-anchor="middle">consultas tuas</text>
+<text class="t-lbl halo-zone" data-l="pt" x="493" y="1004" text-anchor="middle">consultas manuais</text>
+<text class="t-lbl halo-zone" data-l="en" x="493" y="1004" text-anchor="middle">ad-hoc queries</text>
 </svg></div>
-      <figcaption>O <code>Makefile</code> chama o Docker, que lê o <code>docker-compose.yml</code> (e o <code>.env</code>, para a porta 5433), constrói a imagem a partir do <code>Dockerfile</code> e arranca o Python em <code>__main__.py</code>. Daí para baixo, é sempre o ficheiro de cima que chama o de baixo. Fora do esquema: o <code>docker/postgres-init/</code> cria a base de dados de testes quando o PostgreSQL arranca pela primeira vez, e o <code>Makefile</code> também lê o <code>.env</code>.</figcaption>
+      <figcaption data-l="pt">O <code>Makefile</code> chama o Docker, que lê o <code>docker-compose.yml</code> (e o <code>.env</code>, com as definições locais), constrói a imagem a partir do <code>Dockerfile</code> e arranca o Python em <code>__main__.py</code>. Daí para baixo, é sempre o ficheiro de cima que chama o de baixo. Fora do esquema: o <code>docker/postgres-init/</code> cria a base de dados de testes quando o PostgreSQL arranca pela primeira vez, e o <code>Makefile</code> também lê o <code>.env</code>.</figcaption>
+      <figcaption data-l="en">The <code>Makefile</code> calls Docker, which reads <code>docker-compose.yml</code> (and <code>.env</code>, for local settings), builds the image from the <code>Dockerfile</code> and starts Python in <code>__main__.py</code>. From there down, each file calls the one below it. Not shown: <code>docker/postgres-init/</code> creates the test database the first time PostgreSQL starts, and the <code>Makefile</code> also reads <code>.env</code>.</figcaption>
     </figure>
 
-    <h3>Quando fazes <code>git push</code></h3>
+    <h3><span data-l="pt">A cada</span><span data-l="en">On every</span> <code>git push</code></h3>
     <figure>
-      <div class="fig-scroll"><svg viewBox="0 0 800 480" role="img" aria-label="Ligações ao fazer git push: ci.yml corre ruff, pytest e docker build; o pytest corre os testes, que usam o fake_dgeg.py e um PostgreSQL de teste e importam o código de src." xmlns="http://www.w3.org/2000/svg"><defs><marker id="f3-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0 0L10 5L0 10z"/></marker><marker id="f3-acc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path class="ah-accent" d="M0 0L10 5L0 10z"/></marker></defs>
+      <div class="fig-scroll"><svg viewBox="0 0 800 480" role="img" aria-labelledby="f3-t" xmlns="http://www.w3.org/2000/svg"><title id="f3-t">On every git push: ci.yml runs ruff, pytest and docker build; pytest runs the tests, which use fake_dgeg.py and a test PostgreSQL and import the code in src. / Ligações a cada git push: ci.yml corre ruff, pytest e docker build; o pytest corre os testes, que usam o fake_dgeg.py e um PostgreSQL de teste e importam o código de src.</title><defs><marker id="f3-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0 0L10 5L0 10z"/></marker><marker id="f3-acc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path class="ah-accent" d="M0 0L10 5L0 10z"/></marker></defs>
 <rect class="zone" x="8" y="8" width="784" height="464" rx="10"/>
 <text class="t-zone" x="240" y="30" text-anchor="start">GitHub Actions</text>
 <rect class="pill" x="24" y="24" width="200" height="40" rx="20.0"/>
 <text class="t-pill" x="124.0" y="48.5" text-anchor="middle">$ git push</text>
 <path class="edge" d="M124 64V104" marker-end="url(#f3-arr)"/>
-<text class="t-lbl halo-zone" x="134" y="89" text-anchor="start">dispara</text>
+<text class="t-lbl halo-zone" data-l="pt" x="134" y="89" text-anchor="start">dispara</text>
+<text class="t-lbl halo-zone" data-l="en" x="134" y="89" text-anchor="start">triggers</text>
 <rect class="node" x="24" y="104" width="200" height="56" rx="6"/>
 <text class="t-mono" x="36" y="127" text-anchor="start">ci.yml</text>
 <text class="t-sub" x="36" y="146" text-anchor="start">.github/workflows/</text>
@@ -351,51 +443,87 @@
 <path class="edge" d="M124 186V216" marker-end="url(#f3-arr)"/>
 <path class="edge" d="M400 186V216" marker-end="url(#f3-arr)"/>
 <path class="edge" d="M676 186V216" marker-end="url(#f3-arr)"/>
-<text class="t-lbl halo-zone" x="134" y="178">corre</text>
+<text class="t-lbl halo-zone" data-l="pt" x="134" y="178" text-anchor="start">corre</text>
+<text class="t-lbl halo-zone" data-l="en" x="134" y="178" text-anchor="start">runs</text>
 <rect class="node" x="24" y="216" width="200" height="56" rx="6"/>
 <text class="t-mono" x="36" y="239" text-anchor="start">ruff</text>
-<text class="t-sub" x="36" y="258" text-anchor="start">estilo e erros comuns</text>
+<text class="t-sub" data-l="pt" x="36" y="258" text-anchor="start">estilo e erros comuns</text>
+<text class="t-sub" data-l="en" x="36" y="258" text-anchor="start">style and common bugs</text>
 <rect class="node" x="300" y="216" width="200" height="56" rx="6"/>
 <text class="t-mono" x="312" y="239" text-anchor="start">pytest</text>
-<text class="t-sub" x="312" y="258" text-anchor="start">44 testes</text>
+<text class="t-sub" data-l="pt" x="312" y="258" text-anchor="start">44 testes</text>
+<text class="t-sub" data-l="en" x="312" y="258" text-anchor="start">44 tests</text>
 <rect class="node" x="576" y="216" width="200" height="56" rx="6"/>
 <text class="t-mono" x="588" y="239" text-anchor="start">docker build</text>
-<text class="t-sub" x="588" y="258" text-anchor="start">a imagem constrói?</text>
+<text class="t-sub" data-l="pt" x="588" y="258" text-anchor="start">a imagem constrói?</text>
+<text class="t-sub" data-l="en" x="588" y="258" text-anchor="start">does the image build?</text>
 <path class="edge" d="M400 272V312" marker-end="url(#f3-arr)"/>
-<text class="t-lbl halo-zone" x="410" y="297" text-anchor="start">corre</text>
+<text class="t-lbl halo-zone" data-l="pt" x="410" y="297" text-anchor="start">corre</text>
+<text class="t-lbl halo-zone" data-l="en" x="410" y="297" text-anchor="start">runs</text>
 <rect class="node" x="300" y="312" width="200" height="56" rx="6"/>
 <text class="t-mono" x="312" y="335" text-anchor="start">tests/</text>
 <text class="t-sub" x="312" y="354" text-anchor="start">test_*.py + conftest.py</text>
 <rect class="node" x="576" y="312" width="200" height="56" rx="6"/>
 <text class="t-mono" x="588" y="335" text-anchor="start">fake_dgeg.py</text>
-<text class="t-sub" x="588" y="354" text-anchor="start">finge ser a API</text>
+<text class="t-sub" data-l="pt" x="588" y="354" text-anchor="start">finge ser a API</text>
+<text class="t-sub" data-l="en" x="588" y="354" text-anchor="start">stands in for the API</text>
 <rect class="node ext" x="24" y="312" width="200" height="56" rx="6"/>
 <text class="t-title" x="36" y="335" text-anchor="start">PostgreSQL 16</text>
-<text class="t-sub" x="36" y="354" text-anchor="start">BD de teste do CI</text>
+<text class="t-sub" data-l="pt" x="36" y="354" text-anchor="start">BD de teste do CI</text>
+<text class="t-sub" data-l="en" x="36" y="354" text-anchor="start">CI test database</text>
 <path class="edge" d="M500 340H576" marker-end="url(#f3-arr)"/>
-<text class="t-lbl halo-zone" x="538" y="332" text-anchor="middle">usa</text>
+<text class="t-lbl halo-zone" data-l="pt" x="538" y="332" text-anchor="middle">usa</text>
+<text class="t-lbl halo-zone" data-l="en" x="538" y="332" text-anchor="middle">uses</text>
 <path class="edge" d="M300 340H224" marker-end="url(#f3-arr)"/>
-<text class="t-lbl halo-zone" x="262" y="332" text-anchor="middle">grava em</text>
+<text class="t-lbl halo-zone" data-l="pt" x="262" y="332" text-anchor="middle">grava em</text>
+<text class="t-lbl halo-zone" data-l="en" x="262" y="332" text-anchor="middle">writes to</text>
 <path class="edge" d="M400 368V408" marker-end="url(#f3-arr)"/>
-<text class="t-lbl halo-zone" x="410" y="393" text-anchor="start">importa</text>
+<text class="t-lbl halo-zone" data-l="pt" x="410" y="393" text-anchor="start">importa</text>
+<text class="t-lbl halo-zone" data-l="en" x="410" y="393" text-anchor="start">imports</text>
 <rect class="node" x="300" y="408" width="200" height="56" rx="6"/>
 <text class="t-mono" x="312" y="431" text-anchor="start">src/fuel_prices/</text>
-<text class="t-sub" x="312" y="450" text-anchor="start">o código verdadeiro</text>
+<text class="t-sub" data-l="pt" x="312" y="450" text-anchor="start">o código verdadeiro</text>
+<text class="t-sub" data-l="en" x="312" y="450" text-anchor="start">the real code</text>
 </svg></div>
-      <figcaption>O GitHub Actions corre o mesmo que tu podes correr com <code>make lint</code> e <code>make test</code>. O <code>fake_dgeg.py</code> faz de API, para que os testes não dependam da DGEG estar no ar, e o PostgreSQL é verdadeiro. As regras do ruff e do pytest estão no <code>pyproject.toml</code>.</figcaption>
+      <figcaption data-l="pt">O GitHub Actions corre o mesmo que se pode correr localmente com <code>make lint</code> e <code>make test</code>. O <code>fake_dgeg.py</code> faz de API, para que os testes não dependam de a DGEG estar no ar, e o PostgreSQL é verdadeiro. As regras do ruff e do pytest estão no <code>pyproject.toml</code>. Um segundo workflow, <code>scheduled.yml</code>, corre o pipeline duas vezes por dia contra uma base de dados PostgreSQL na cloud.</figcaption>
+      <figcaption data-l="en">GitHub Actions runs the same checks you can run locally with <code>make lint</code> and <code>make test</code>. <code>fake_dgeg.py</code> stands in for the API so the tests don't depend on DGEG being up, while PostgreSQL is real. The ruff and pytest rules live in <code>pyproject.toml</code>. A second workflow, <code>scheduled.yml</code>, runs the pipeline twice a day against a cloud PostgreSQL database.</figcaption>
     </figure>
   </section>
 
   <section>
-    <h2><span class="num">3</span>Em três frases, numa entrevista</h2>
+    <h2><span class="num">3</span><span data-l="pt">O projeto em três frases</span><span data-l="en">The project in three sentences</span></h2>
     <div class="say">
-      <ul>
-        <li>A API da DGEG só mostra o preço atual, por isso o pipeline tira uma fotografia por dia e deteta o que mudou para construir o histórico.</li>
+      <ul data-l="pt">
+        <li>A API da DGEG só mostra o preço atual, por isso o pipeline tira uma fotografia em cada execução e deteta o que mudou para construir o histórico.</li>
         <li>Cada fotografia fica guardada em Parquet antes de entrar no PostgreSQL, o que permite reconstruir tudo sem voltar a chamar a API.</li>
         <li>No PostgreSQL, os dados passam de <code>raw</code> para um modelo em estrela em <code>analytics</code>, pronto para SQL e Power BI.</li>
+      </ul>
+      <ul data-l="en">
+        <li>The DGEG API only shows the current price, so the pipeline takes a snapshot on every run and detects what changed to build the history.</li>
+        <li>Each snapshot is stored as Parquet before it reaches PostgreSQL, so everything can be rebuilt without calling the API again.</li>
+        <li>Inside PostgreSQL, data moves from <code>raw</code> to a star schema in <code>analytics</code>, ready for SQL and Power BI.</li>
       </ul>
     </div>
   </section>
 </main>
+
+<script>
+  (function () {
+    var TITLES = { pt: "Mapa do fuel-prices-pipeline", en: "fuel-prices-pipeline map" };
+    function setLang(l, save) {
+      document.documentElement.dataset.lang = l;
+      document.documentElement.lang = l === "pt" ? "pt-PT" : "en";
+      document.title = TITLES[l];
+      ["pt", "en"].forEach(function (k) {
+        document.getElementById("lang-" + k).setAttribute("aria-pressed", String(k === l));
+      });
+      if (save) { try { localStorage.setItem("lang", l); } catch (e) {} }
+    }
+    document.querySelectorAll(".lang button").forEach(function (b) {
+      b.addEventListener("click", function () { setLang(b.dataset.set, true); });
+    });
+    setLang(document.documentElement.dataset.lang || "en", false);
+  })();
+</script>
 
 </body></html>
