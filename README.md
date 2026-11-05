@@ -182,7 +182,7 @@ the start of the week.
 ### Run it automatically
 
 **In the cloud (GitHub Actions + Neon).** [`scheduled.yml`](.github/workflows/scheduled.yml) runs the
-pipeline at 10:00 and 22:00 UTC on GitHub's servers and loads a managed PostgreSQL on
+pipeline once a day (22:17 UTC) on GitHub's servers and loads a managed PostgreSQL on
 [Neon](https://neon.com) (free plan), so no computer of yours has to be switched on. One-time setup:
 
 1. Create a Neon project (region: Europe) and copy its connection string.
@@ -342,12 +342,14 @@ meant to run once a day. Data © DGEG.
 ├── docker-compose.yml     # PostgreSQL + Adminer + pipeline
 ├── Dockerfile
 ├── Makefile
-└── .github/workflows/     # ci.yml (lint + tests + image build) · scheduled.yml (runs twice a day)
+└── .github/workflows/     # ci.yml (lint + tests + image build) · scheduled.yml (runs once a day)
 ```
 
 ## Roadmap
 
-- [ ] Schedule daily runs with Airflow (or a scheduled GitHub Action)
+- [x] Schedule daily runs (GitHub Actions + Neon)
+- [ ] Run twice a day (morning and evening) to study intraday price changes and when stations reprice
+- [ ] Orchestrate with Airflow
 - [ ] Move the analytics layer to dbt with tests and docs
 - [ ] Station services and opening hours (`GetDadosPosto`) as a second dimension
 - [ ] Dashboard: price map and trends by district
