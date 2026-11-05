@@ -4,7 +4,7 @@ name: Scheduled run
 # The warehouse lives in a managed PostgreSQL (Neon); its connection string is the DATABASE_URL secret.
 on:
   schedule:
-    - cron: "0 10,22 * * *"   # UTC: 10:00 and 22:00 in Lisbon in winter, 11:00 and 23:00 in summer
+    - cron: "17 10,22 * * *"   # UTC: 10:00 and 22:00 in Lisbon in winter, 11:00 and 23:00 in summer
   workflow_dispatch: {}        # "Run workflow" button, for a manual run
 
 # Never two runs at the same time: a new one waits for the previous one to finish.
